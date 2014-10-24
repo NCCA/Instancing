@@ -339,7 +339,7 @@ void NGLScene::initialize()
   // register the uniforms for later uses
   shader->autoRegisterUniforms("TextureShader");
   // create our cube
-
+  shader->setShaderParam1i("tex1",0);
   createCube(0.2);
   loadTexture();
   glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
@@ -420,6 +420,7 @@ void NGLScene::render()
    glBeginTransformFeedback(GL_POINTS);
    // now draw our array of points (now is a good time to check out the feedback.vs shader to see what
    // happens here)
+
    glDrawArrays(GL_POINTS, 0, m_instances);
    // now signal that we have done with the feedback buffer
    glEndTransformFeedback();
@@ -440,9 +441,12 @@ void NGLScene::render()
    glBindVertexArray(m_vaoID);
 
    // activate the texture
+   glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_BUFFER, m_tboID);
+   glActiveTexture(GL_TEXTURE0);
    glBindTexture(GL_TEXTURE_2D,m_textureName);
    glPolygonMode(GL_FRONT_AND_BACK,m_polyMode);
+
    glDrawArraysInstanced(GL_TRIANGLES, 0,36, m_instances);
    std::cout<<"tex "<<m_textureName<<" buffer id "<<m_tboID<<"\n";
    ++m_frames;

@@ -1,4 +1,4 @@
-#version 400 core
+#version 330 core
 // this is a pointer to the current 2D texture object
 uniform sampler2D tex1;
 // the vertex UV
@@ -9,5 +9,5 @@ void main ()
 {
  // set the fragment colour to the current texture
  outColour = vec4(vertUV,1,1);//texture(tex1,vertUV);
- // outColour=texture(tex1,vertUV);
+ //outColour=texture(tex1,vertUV);
 }

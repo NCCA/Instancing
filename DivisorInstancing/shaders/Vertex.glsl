@@ -1,4 +1,4 @@
-#version 400 core
+#version 330 core
 // some of this code is borrowed / modified from the
 // Apple 	WWDC 2011 Instancing demo
 
