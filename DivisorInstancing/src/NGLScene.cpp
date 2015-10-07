@@ -43,7 +43,7 @@ void NGLScene::decInstances()
   m_updateBuffer=true;
 }
 
-NGLScene::NGLScene(QWindow *_parent) : OpenGLWindow(_parent)
+NGLScene::NGLScene()
 {
   // re-size the widget to that of the parent (in this case the GLFrame passed in on construction)
   m_rotate=false;
@@ -64,12 +64,10 @@ NGLScene::NGLScene(QWindow *_parent) : OpenGLWindow(_parent)
 
 NGLScene::~NGLScene()
 {
-  ngl::NGLInit *Init = ngl::NGLInit::instance();
   std::cout<<"Shutting down NGL, removing VAO's and Shaders\n";
   glDeleteVertexArrays(1,&m_dataID);
   glDeleteVertexArrays(1,&m_matrixID);
   glDeleteVertexArrays(1,&m_vaoID);
-  Init->NGLQuit();
 }
 
 void NGLScene::loadTexture()
@@ -227,22 +225,17 @@ void NGLScene::createCube(GLfloat _scale )
   glVertexAttribDivisor (5, 1);
 }
 
-void NGLScene::resizeEvent(QResizeEvent *_event )
+void NGLScene::resizeGL(int _w, int _h)
 {
-  if(isExposed())
-  {
-  int w=_event->size().width();
-  int h=_event->size().height();
-  // set the viewport for openGL
-  glViewport(0,0,w,h);
+  // set the viewport for openGL we need to take into account retina display
+  // etc by using the pixel ratio as a multiplyer
+  glViewport(0,0,_w*devicePixelRatio(),_h*devicePixelRatio());
   // now set the camera size values as the screen size has changed
-  m_cam->setShape(45,(float)w/h,0.05,350);
-  renderLater();
-  }
+  m_cam->setShape(45.0f,(float)width()/height(),0.05f,350.0f);
+  update();
 }
 
-
-void NGLScene::initialize()
+void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
@@ -354,7 +347,7 @@ void NGLScene::loadMatricesToShader()
   shader->setShaderParamFromMat4("M",M);
 }
 
-void NGLScene::render()
+void NGLScene::paintGL()
 {
   // clear the screen and depth buffer
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -445,7 +438,7 @@ void NGLScene::mouseMoveEvent (QMouseEvent * _event)
     m_spinYFace += (float) 0.5f * diffx;
     m_origX = _event->x();
     m_origY = _event->y();
-    renderLater();
+    update();
 
   }
         // right mouse translate code
@@ -457,7 +450,7 @@ void NGLScene::mouseMoveEvent (QMouseEvent * _event)
     m_origYPos=_event->y();
     m_modelPos.m_x += INCREMENT * diffX;
     m_modelPos.m_y -= INCREMENT * diffY;
-    renderLater();
+    update();
 
    }
 }
@@ -513,7 +506,7 @@ void NGLScene::wheelEvent(QWheelEvent *_event)
 	{
 		m_modelPos.m_z-=ZOOM;
 	}
-	renderLater();
+	update();
 }
 //----------------------------------------------------------------------------------------------------------------------
 
@@ -540,7 +533,7 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   }
   // finally update the GLWindow and re-draw
   //if (isExposed())
-    renderLater();
+    update();
 }
 
 void NGLScene::timerEvent( QTimerEvent *_event )
@@ -555,6 +548,6 @@ void NGLScene::timerEvent( QTimerEvent *_event )
       }
      }
       // re-draw GL
-  renderNow();
+  update();
 }
 
