@@ -276,7 +276,7 @@ void NGLScene::initializeGL()
   // This is for our transform shader and it will load a series of matrics into a uniform
   // block ready for drawing later
   shader->createShaderProgram("TransformFeedback");
-  shader->attachShader("TransVertex",ngl::VERTEX);
+  shader->attachShader("TransVertex",ngl::ShaderType::VERTEX);
   shader->loadShaderSource("TransVertex","shaders/feedback.glsl");
   shader->compileShader("TransVertex");
   shader->attachShaderToProgram("TransformFeedback","TransVertex");
@@ -299,8 +299,8 @@ void NGLScene::initializeGL()
   // now we are going to create our texture shader for drawing the cube
   shader->createShaderProgram("TextureShader");
 
-  shader->attachShader("TextureVertex",ngl::VERTEX);
-  shader->attachShader("TextureFragment",ngl::FRAGMENT);
+  shader->attachShader("TextureVertex",ngl::ShaderType::VERTEX);
+  shader->attachShader("TextureFragment",ngl::ShaderType::FRAGMENT);
   shader->loadShaderSource("TextureVertex","shaders/Vertex.glsl");
   shader->loadShaderSource("TextureFragment","shaders/Fragment.glsl");
 
