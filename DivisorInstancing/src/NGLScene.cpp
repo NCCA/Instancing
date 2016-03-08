@@ -9,7 +9,7 @@
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
 #include <ngl/Random.h>
-
+#include <memory>
 
 //----------------------------------------------------------------------------------------------------------------------
 /// @brief the increment for x/y translation with mouse movement
@@ -72,21 +72,21 @@ NGLScene::~NGLScene()
 
 void NGLScene::loadTexture()
 {
-  QImage *image = new QImage();
-  bool loaded=image->load("textures/crate.bmp");
+  QImage image;
+  bool loaded=image.load("textures/crate.bmp");
   if(loaded == true)
   {
-                int width=image->width();
-                int height=image->height();
+    int width=image.width();
+    int height=image.height();
 
-    unsigned char *data = new unsigned char[ width*height*3];
+    std::unique_ptr<unsigned char []>data( new unsigned char[ width*height*3]);
     unsigned int index=0;
     QRgb colour;
     for( int y=0; y<height; ++y)
     {
       for( int x=0; x<width; ++x)
       {
-        colour=image->pixel(x,y);
+        colour=image.pixel(x,y);
 
         data[index++]=qRed(colour);
         data[index++]=qGreen(colour);
@@ -100,7 +100,7 @@ void NGLScene::loadTexture()
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST_MIPMAP_NEAREST);
 
-  glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,width,height,0,GL_RGB,GL_UNSIGNED_BYTE,data);
+  glTexImage2D(GL_TEXTURE_2D,0,GL_RGB,width,height,0,GL_RGB,GL_UNSIGNED_BYTE,data.get());
   glGenerateMipmap(GL_TEXTURE_2D); //  Allocate the mipmaps
 
   }
@@ -119,7 +119,7 @@ void NGLScene::createDataPoints()
   glGenBuffers(1, &dataArray );
   glBindBuffer(GL_ARRAY_BUFFER, dataArray);
   // allocate space for the vec3 for each point
-  ngl::Vec3 *data = new ngl::Vec3[maxinstances];
+  std::unique_ptr< ngl::Vec3 []>data( new ngl::Vec3[maxinstances]);
   // in this case create a sort of supertorus distribution of points
   // based on a random point
   ngl::Random *rng=ngl::Random::instance();
@@ -139,13 +139,11 @@ void NGLScene::createDataPoints()
     data[i].set(p.m_x,p.m_y,p.m_z);
   }
   // now store this buffer data for later.
-  glBufferData(GL_ARRAY_BUFFER, maxinstances * sizeof(ngl::Vec3), data, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, maxinstances * sizeof(ngl::Vec3), data.get(), GL_STATIC_DRAW);
   // attribute 0 is the inPos in our shader
   glEnableVertexAttribArray(0);
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, BUFFER_OFFSET(0));
 
-  // finally we clear the point data as it is no longer used
-  delete [] data;
 
 }
 //----------------------------------------------------------------------------------------------------------------------
