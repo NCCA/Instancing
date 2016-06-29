@@ -14,15 +14,15 @@
 //----------------------------------------------------------------------------------------------------------------------
 /// @brief the increment for x/y translation with mouse movement
 //----------------------------------------------------------------------------------------------------------------------
-const static float INCREMENT=0.01;
+constexpr float INCREMENT=0.01f;
 //----------------------------------------------------------------------------------------------------------------------
 /// @brief the increment for the wheel zoom
 //----------------------------------------------------------------------------------------------------------------------
-const static float ZOOM=5.0;
+constexpr float ZOOM=5.0f;
 //----------------------------------------------------------------------------------------------------------------------
 /// num instances
 //----------------------------------------------------------------------------------------------------------------------
-const static unsigned int maxinstances=1000000;
+constexpr size_t maxinstances=1000000;
 
 
 
@@ -45,11 +45,6 @@ void NGLScene::decInstances()
 
 NGLScene::NGLScene()
 {
-  // re-size the widget to that of the parent (in this case the GLFrame passed in on construction)
-  m_rotate=false;
-  // mouse rotation values set to 0
-  m_spinXFace=0;
-  m_spinYFace=0;
   setTitle("Divisor Instancing");
   m_fpsTimer =startTimer(0);
   m_fps=0;
@@ -225,8 +220,8 @@ void NGLScene::createCube(GLfloat _scale )
 
 void NGLScene::resizeGL(QResizeEvent *_event)
 {
-  m_width=_event->size().width()*devicePixelRatio();
-  m_height=_event->size().height()*devicePixelRatio();
+  m_win.width=_event->size().width()*devicePixelRatio();
+  m_win.height=_event->size().height()*devicePixelRatio();
   // now set the camera size values as the screen size has changed
   m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
 }
@@ -234,8 +229,8 @@ void NGLScene::resizeGL(QResizeEvent *_event)
 void NGLScene::resizeGL(int _w , int _h)
 {
   m_cam.setShape(45.0f,(float)_w/_h,0.05f,350.0f);
-  m_width=_w*devicePixelRatio();
-  m_height=_h*devicePixelRatio();
+  m_win.width=_w*devicePixelRatio();
+  m_win.height=_h*devicePixelRatio();
 }
 
 void NGLScene::initializeGL()
@@ -354,14 +349,14 @@ void NGLScene::paintGL()
 {
   // clear the screen and depth buffer
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glViewport(0,0,m_width,m_height);
+  glViewport(0,0,m_win.width,m_win.height);
   // Rotation based on the mouse position for our global
   // transform
   ngl::Mat4 rotX;
   ngl::Mat4 rotY;
   // create the rotation matrices
-  rotX.rotateX(m_spinXFace);
-  rotY.rotateY(m_spinYFace);
+  rotX.rotateX(m_win.spinXFace);
+  rotY.rotateY(m_win.spinYFace);
   // multiply the rotations
   m_mouseGlobalTX=rotY*rotX;
   // add the translations
@@ -434,24 +429,24 @@ void NGLScene::mouseMoveEvent (QMouseEvent * _event)
   // note the method buttons() is the button state when event was called
   // this is different from button() which is used to check which button was
   // pressed when the mousePress/Release event is generated
-  if(m_rotate && _event->buttons() == Qt::LeftButton)
+  if(m_win.rotate && _event->buttons() == Qt::LeftButton)
   {
-    int diffx=_event->x()-m_origX;
-    int diffy=_event->y()-m_origY;
-    m_spinXFace += (float) 0.5f * diffy;
-    m_spinYFace += (float) 0.5f * diffx;
-    m_origX = _event->x();
-    m_origY = _event->y();
+    int diffx=_event->x()-m_win.origX;
+    int diffy=_event->y()-m_win.origY;
+    m_win.spinXFace += 0.5f * diffy;
+    m_win.spinYFace += 0.5f * diffx;
+    m_win.origX = _event->x();
+    m_win.origY = _event->y();
     update();
 
   }
         // right mouse translate code
-  else if(m_translate && _event->buttons() == Qt::RightButton)
+  else if(m_win.translate && _event->buttons() == Qt::RightButton)
   {
-    int diffX = (int)(_event->x() - m_origXPos);
-    int diffY = (int)(_event->y() - m_origYPos);
-    m_origXPos=_event->x();
-    m_origYPos=_event->y();
+    int diffX = _event->x() - m_win.origXPos;
+    int diffY = _event->y() - m_win.origYPos;
+    m_win.origXPos=_event->x();
+    m_win.origYPos=_event->y();
     m_modelPos.m_x += INCREMENT * diffX;
     m_modelPos.m_y -= INCREMENT * diffY;
     update();
@@ -467,16 +462,16 @@ void NGLScene::mousePressEvent ( QMouseEvent * _event)
   // store the value where the maouse was clicked (x,y) and set the Rotate flag to true
   if(_event->button() == Qt::LeftButton)
   {
-    m_origX = _event->x();
-    m_origY = _event->y();
-    m_rotate =true;
+    m_win.origX = _event->x();
+    m_win.origY = _event->y();
+    m_win.rotate =true;
   }
   // right mouse translate mode
   else if(_event->button() == Qt::RightButton)
   {
-    m_origXPos = _event->x();
-    m_origYPos = _event->y();
-    m_translate=true;
+    m_win.origXPos = _event->x();
+    m_win.origYPos = _event->y();
+    m_win.translate=true;
   }
 
 }
@@ -488,12 +483,12 @@ void NGLScene::mouseReleaseEvent ( QMouseEvent * _event )
   // we then set Rotate to false
   if (_event->button() == Qt::LeftButton)
   {
-    m_rotate=false;
+    m_win.rotate=false;
   }
         // right mouse translate mode
   if (_event->button() == Qt::RightButton)
   {
-    m_translate=false;
+    m_win.translate=false;
   }
 }
 
