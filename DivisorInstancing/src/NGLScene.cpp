@@ -11,14 +11,7 @@
 #include <ngl/Random.h>
 #include <memory>
 
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief the increment for x/y translation with mouse movement
-//----------------------------------------------------------------------------------------------------------------------
-constexpr float INCREMENT=0.01f;
-//----------------------------------------------------------------------------------------------------------------------
-/// @brief the increment for the wheel zoom
-//----------------------------------------------------------------------------------------------------------------------
-constexpr float ZOOM=5.0f;
+
 //----------------------------------------------------------------------------------------------------------------------
 /// num instances
 //----------------------------------------------------------------------------------------------------------------------
@@ -104,6 +97,7 @@ void NGLScene::loadTexture()
 //----------------------------------------------------------------------------------------------------------------------
 void NGLScene::createDataPoints()
 {
+  #define BUFFER_OFFSET(i) (reinterpret_cast<void*>(i))
   GLuint dataArray;
   // first create a Vertex array for out data points, we will create max instances
   // size of data but only use a certain amount of them when we draw
@@ -218,13 +212,6 @@ void NGLScene::createCube(GLfloat _scale )
   glVertexAttribDivisor (5, 1);
 }
 
-void NGLScene::resizeGL(QResizeEvent *_event)
-{
-  m_win.width=_event->size().width()*devicePixelRatio();
-  m_win.height=_event->size().height()*devicePixelRatio();
-  // now set the camera size values as the screen size has changed
-  m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
-}
 
 void NGLScene::resizeGL(int _w , int _h)
 {

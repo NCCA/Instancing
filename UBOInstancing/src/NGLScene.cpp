@@ -105,6 +105,7 @@ void NGLScene::loadTexture()
 //----------------------------------------------------------------------------------------------------------------------
 void NGLScene::createDataPoints()
 {
+  #define BUFFER_OFFSET(i) (reinterpret_cast<void*>(i))
   GLuint dataArray;
   // first create a Vertex array for out data points, we will create max instances
   // size of data but only use a certain amount of them when we draw
