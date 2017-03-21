@@ -11,20 +11,25 @@
 #include <ngl/ShaderLib.h>
 #include <ngl/Random.h>
 
-constexpr size_t c_numTrees=15000;
+constexpr size_t c_numTrees=50000;
 
 NGLScene::NGLScene()
 {
 
-  setTitle("Morph Mesh Demo");
+  setTitle("Instancing Meshes");
+  m_fpsTimer =startTimer(0);
+  m_fps=0;
+  m_frames=0;
+  m_timer.start();
+
 }
 
 
 void NGLScene::createTransformTBO()
 {
 
-  GLuint morphTarget;
-  glGenBuffers(1,&morphTarget);
+  GLuint tbo;
+  glGenBuffers(1,&tbo);
   std::vector<ngl::Mat4> transforms(c_numTrees);
   ngl::Random *rng=ngl::Random::instance();
   ngl::Vec3 tx;
@@ -32,21 +37,20 @@ void NGLScene::createTransformTBO()
   ngl::Mat4 scale;
   for(auto &t : transforms)
   {
-    tx=rng->getRandomVec3()*140;
+    tx=rng->getRandomVec3()*540;
     auto yScale=rng->randomPositiveNumber(2.0f)+0.5f;
     pos.translate(tx.m_x,0.0,tx.m_z);
-    scale.scale(1.0f,yScale,1.0f);
+    scale.scale(yScale,yScale,yScale);
     t=scale*pos;
   }
-  glBindBuffer(GL_TEXTURE_BUFFER, morphTarget);
-  //ngl::NGLCheckGLError("bind texture",__LINE__);
+  glBindBuffer(GL_TEXTURE_BUFFER, tbo);
   glBufferData(GL_TEXTURE_BUFFER, transforms.size()*sizeof(ngl::Mat4), &transforms[0].m_00, GL_STATIC_DRAW);
 
   glGenTextures(1, &m_tboID);
   glActiveTexture( GL_TEXTURE0 );
   glBindTexture(GL_TEXTURE_BUFFER,m_tboID);
 
-  glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, morphTarget);
+  glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tbo);
 
 }
 
@@ -78,7 +82,7 @@ void NGLScene::initializeGL()
   // Now we will create a basic Camera from the graphics library
   // This is a static camera so it only needs to be set once
   // First create Values for the camera position
-  ngl::Vec3 from(0,100,180);
+  ngl::Vec3 from(0,100,280);
   ngl::Vec3 to(0,10,0);
   ngl::Vec3 up(0,1,0);
 
@@ -113,41 +117,6 @@ void NGLScene::initializeGL()
   shader->linkProgramObject("PerFragADS");
   // and make it active ready to load values
   (*shader)["PerFragADS"]->use();
-  // now we need to set the material and light values
-  /*
-   *struct MaterialInfo
-   {
-        // Ambient reflectivity
-        vec3 Ka;
-        // Diffuse reflectivity
-        vec3 Kd;
-        // Specular reflectivity
-        vec3 Ks;
-        // Specular shininess factor
-        float shininess;
-  };*/
-  shader->setShaderParam3f("material.Ka",0.1,0.1,0.1);
-  // red diffuse
-  shader->setShaderParam3f("material.Kd",0.8,0.8,0.8);
-  // white spec
-  shader->setShaderParam3f("material.Ks",1.0,1.0,1.0);
-  shader->setShaderParam1f("material.shininess",1000);
-  // now for  the lights values (all set to white)
-  /*struct LightInfo
-  {
-  // Light position in eye coords.
-  vec4 position;
-  // Ambient light intensity
-  vec3 La;
-  // Diffuse light intensity
-  vec3 Ld;
-  // Specular light intensity
-  vec3 Ls;
-  };*/
-  shader->setUniform("light.position",ngl::Vec3(2,20,2));
-  shader->setShaderParam3f("light.La",0.1,0.1,0.1);
-  shader->setShaderParam3f("light.Ld",1.0,1.0,1.0);
-  shader->setShaderParam3f("light.Ls",0.9,0.9,0.9);
 
   glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
 
@@ -164,13 +133,6 @@ void NGLScene::loadMatricesToShader()
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   (*shader)["PerFragADS"]->use();
-  ngl::Mat4 MV;
-  ngl::Mat4 MVP;
-  ngl::Mat3 normalMatrix;
-  MV= m_mouseGlobalTX*m_cam.getViewMatrix();
-  MVP=MV*m_cam.getProjectionMatrix() ;
-  normalMatrix=MV;
-  normalMatrix.inverse();
   shader->setUniform("mouseTX",m_mouseGlobalTX);
   shader->setUniform("VP",m_cam.getVPMatrix());
 }
@@ -192,16 +154,18 @@ void NGLScene::paintGL()
    m_mouseGlobalTX.m_m[3][0] = m_modelPos.m_x;
    m_mouseGlobalTX.m_m[3][1] = m_modelPos.m_y;
    m_mouseGlobalTX.m_m[3][2] = m_modelPos.m_z;
+   ++m_frames;
 
   loadMatricesToShader();
   // draw the mesh
   m_mesh->bindVAO();
   glBindTexture(GL_TEXTURE_BUFFER, m_tboID);
-  //m_meshes[0]->draw();
- glDrawArraysInstanced(GL_TRIANGLES,0,m_mesh->getMeshSize(),c_numTrees);
-//  glDrawArrays(GL_TRIANGLES,0,m_meshes[0]->getMeshSize());
-
+  glDrawArraysInstanced(GL_TRIANGLES,0,m_mesh->getMeshSize(),c_numTrees);
   m_mesh->unbindVAO();
+  m_text->setColour(1,1,0);
+  QString text=QString("%1 instances %2 fps").arg(c_numTrees).arg(m_fps);
+  m_text->renderText(10,20,text);
+
 }
 
 //----------------------------------------------------------------------------------------------------------------------
@@ -226,6 +190,21 @@ void NGLScene::keyPressEvent(QKeyEvent *_event)
   }
   // finally update the GLWindow and re-draw
     update();
+}
+
+void NGLScene::timerEvent( QTimerEvent *_event )
+{
+  if(_event->timerId() == m_fpsTimer)
+    {
+      if( m_timer.elapsed() > 1000.0)
+      {
+        m_fps=m_frames;
+        m_frames=0;
+        m_timer.restart();
+      }
+     }
+      // re-draw GL
+  update();
 }
 
 
