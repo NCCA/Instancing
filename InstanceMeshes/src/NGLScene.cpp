@@ -27,14 +27,16 @@ NGLScene::NGLScene()
 
 void NGLScene::createTransformTBO()
 {
-
+  // create a texture buffer to store the position and scale as a mat4 for each tree
   GLuint tbo;
   glGenBuffers(1,&tbo);
+  // resize vector
   std::vector<ngl::Mat4> transforms(c_numTrees);
   ngl::Random *rng=ngl::Random::instance();
   ngl::Vec3 tx;
   ngl::Mat4 pos;
   ngl::Mat4 scale;
+  // set random position and scale for each matrix
   for(auto &t : transforms)
   {
     tx=rng->getRandomVec3()*540;
@@ -43,13 +45,14 @@ void NGLScene::createTransformTBO()
     scale.scale(yScale,yScale,yScale);
     t=scale*pos;
   }
+  // bind and fill TBO
   glBindBuffer(GL_TEXTURE_BUFFER, tbo);
   glBufferData(GL_TEXTURE_BUFFER, transforms.size()*sizeof(ngl::Mat4), &transforms[0].m_00, GL_STATIC_DRAW);
-
+  // attatch to texture ( Texture unit 0 in this case as using not others)
   glGenTextures(1, &m_tboID);
   glActiveTexture( GL_TEXTURE0 );
   glBindTexture(GL_TEXTURE_BUFFER,m_tboID);
-
+  // Note GL_RGBA32F as using Mat4 -> 4* vec4 in size
   glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, tbo);
 
 }
@@ -94,7 +97,7 @@ void NGLScene::initializeGL()
   m_cam.set(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam.setShape(45,(float)720.0/576.0,0.05,350);
+  m_cam.setShape(45.0f,720.0f/576.0,0.05f,350.0f);
   // now to load the shader and set the values
   // grab an instance of shader manager
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
@@ -120,11 +123,16 @@ void NGLScene::initializeGL()
 
   glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
 
-  // as re-size is not explicitly called we need to do this.
-  glViewport(0,0,width(),height());
+  createTransformTBO();
+  // load a texture into texture Unit 1
+  ngl::Texture t("models/ratGrid.png");
+  t.setMultiTexture(1);
+  m_textureID=t.setTextureGL();
+  shader->setShaderParam1i("tex",1);
+  shader->setShaderParam1i("TBO",0);
+
   m_text.reset( new ngl::Text(QFont("Arial",16)));
   m_text->setScreenSize(width(),height());
-  createTransformTBO();
 
 }
 
@@ -133,6 +141,7 @@ void NGLScene::loadMatricesToShader()
 {
   ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   (*shader)["PerFragADS"]->use();
+  // loading this to shader each frame as it is the mouse that changes
   shader->setUniform("mouseTX",m_mouseGlobalTX);
   shader->setUniform("VP",m_cam.getVPMatrix());
 }
@@ -156,12 +165,18 @@ void NGLScene::paintGL()
    m_mouseGlobalTX.m_m[3][2] = m_modelPos.m_z;
    ++m_frames;
 
-  loadMatricesToShader();
   // draw the mesh
   m_mesh->bindVAO();
+  loadMatricesToShader();
+
+  glActiveTexture(GL_TEXTURE0);
   glBindTexture(GL_TEXTURE_BUFFER, m_tboID);
+  glActiveTexture(GL_TEXTURE1);
+  glBindTexture(GL_TEXTURE_2D,m_textureID);
+
   glDrawArraysInstanced(GL_TRIANGLES,0,m_mesh->getMeshSize(),c_numTrees);
   m_mesh->unbindVAO();
+
   m_text->setColour(1,1,0);
   QString text=QString("%1 instances %2 fps").arg(c_numTrees).arg(m_fps);
   m_text->renderText(10,20,text);
