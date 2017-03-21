@@ -1,0 +1,2 @@
+# Hashes of file build rules.
+65368988106d039af90af28fd91102ef CMakeFiles/MorphObj_automoc

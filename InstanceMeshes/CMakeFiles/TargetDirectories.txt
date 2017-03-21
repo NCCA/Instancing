@@ -1,0 +1,2 @@
+/Users/jmacey/NGL6Demos/MorphObjTBO/CMakeFiles/MorphObj_automoc.dir
+/Users/jmacey/NGL6Demos/MorphObjTBO/CMakeFiles/MorphObj.dir
