@@ -11,8 +11,8 @@ out vec2 vertUV;
 void main()
 {
   // create a simple rotation matrix for the UV's
-  mat2 rot=mat2(cos(gl_InstanceID),sin(gl_InstanceID),
-                -sin(gl_InstanceID),cos(gl_InstanceID));
+  mat2 rot=mat2(cos(gl_InstanceID),-sin(gl_InstanceID),
+                sin(gl_InstanceID),cos(gl_InstanceID));
   // modify the UV's so the meshes look different
   vertUV=rot*inUV;
   // build our tx matrix from the TBO

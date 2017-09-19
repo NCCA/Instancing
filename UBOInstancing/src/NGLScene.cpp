@@ -349,10 +349,10 @@ void NGLScene::loadMatricesToShader()
   MVP= M*m_cam.getVPMatrix();
   normalMatrix=MV;
   normalMatrix.inverse();
-  shader->setShaderParamFromMat4("MV",MV);
-  shader->setShaderParamFromMat4("MVP",MVP);
-  shader->setShaderParamFromMat3("normalMatrix",normalMatrix);
-  shader->setShaderParamFromMat4("M",M);
+  shader->setUniform("MV",MV);
+  shader->setUniform("MVP",MVP);
+  shader->setUniform("normalMatrix",normalMatrix);
+  shader->setUniform("M",M);
 }
 
 void NGLScene::paintGL()
@@ -387,11 +387,11 @@ void NGLScene::paintGL()
   // activate our vertex array for the points so we can fill in our matrix buffer
   glBindVertexArray(m_dataID);
   // set the view for the camera
-  shader->setRegisteredUniformFromMat4("View",m_cam.getViewMatrix());
+  shader->setUniform("View",m_cam.getViewMatrix());
   // this sets some per-vertex data values for the Matrix shader
-  shader->setRegisteredUniform4f("data",0.3,0.6,0.5,1.2);
+  shader->setUniform("data",0.3f,0.6f,0.5f,1.2f);
   // pass in the mouse rotation
-  shader->setRegisteredUniformFromMat4("mouseRotation",m_mouseGlobalTX);
+  shader->setUniform("mouseRotation",m_mouseGlobalTX);
   // this flag tells OpenGL to discard the data once it has passed the transform stage, this means
   // that none of it wil be drawn (RASTERIZED) remember to turn this back on once we have done this
   glEnable(GL_RASTERIZER_DISCARD);
@@ -407,7 +407,7 @@ void NGLScene::paintGL()
   // now we are going to switch to our texture shader and render our boxes
   (*shader)["TextureShader"]->use();
   // set the projection matrix for our camera
-  shader->setRegisteredUniformFromMat4("Projection",m_cam.getProjectionMatrix());
+  shader->setUniform("Projection",m_cam.getProjectionMatrix());
   // activate the texture
   glBindTexture(GL_TEXTURE_2D,m_textureName);
   // activate our vertex array object for the box
