@@ -43,7 +43,7 @@ void NGLScene::createTransformTBO()
     auto yScale=rng->randomPositiveNumber(2.0f)+0.5f;
     pos.translate(tx.m_x,0.0,tx.m_z);
     scale.scale(yScale,yScale,yScale);
-    t=scale*pos;
+    t=pos*scale;
   }
   // bind and fill TBO
   glBindBuffer(GL_TEXTURE_BUFFER, tbo);
@@ -128,8 +128,8 @@ void NGLScene::initializeGL()
   ngl::Texture t("models/ratGrid.png");
   t.setMultiTexture(1);
   m_textureID=t.setTextureGL();
-  shader->setShaderParam1i("tex",1);
-  shader->setShaderParam1i("TBO",0);
+  shader->setUniform("tex",1);
+  shader->setUniform("TBO",0);
 
   m_text.reset( new ngl::Text(QFont("Arial",16)));
   m_text->setScreenSize(width(),height());
