@@ -2,9 +2,6 @@
 #include <QGuiApplication>
 
 #include "NGLScene.h"
-#include <ngl/Camera.h>
-#include <ngl/Light.h>
-#include <ngl/Material.h>
 #include <ngl/NGLInit.h>
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
@@ -14,7 +11,7 @@
 //----------------------------------------------------------------------------------------------------------------------
 /// @brief the increment for x/y translation with mouse movement
 //----------------------------------------------------------------------------------------------------------------------
-constexpr float INCREMENT=0.01;
+constexpr float INCREMENT=0.01f;
 //----------------------------------------------------------------------------------------------------------------------
 /// @brief the increment for the wheel zoom
 //----------------------------------------------------------------------------------------------------------------------
@@ -124,13 +121,13 @@ void NGLScene::createDataPoints()
   for(unsigned int i=0; i<maxinstances; ++i)
   {
     float angle = rng->randomNumber(M_PI);
-    float radius = rng->randomNumber(1.0);
+    float radius = rng->randomNumber(1.0f);
     float ca = cosf(angle);
     float sa = sinf(angle);
     float cs = ca < 0 ? -1 : 1;
     float ss = sa < 0 ? -1 : 1;
-    float x = radius * cs * pow(fabsf(ca), 1.2);
-    float y = radius * ss * pow(fabsf(sa), 1.2);
+    float x = radius * cs * pow(fabsf(ca), 1.2f);
+    float y = radius * ss * pow(fabsf(sa), 1.2f);
 
     p=rng->getRandomPoint(x*80,y,x+y*80);
     data[i].set(p.m_x,p.m_y,p.m_z);
@@ -149,7 +146,7 @@ void NGLScene::createDataPoints()
 
   glBindBuffer(GL_ARRAY_BUFFER, m_matrixID);
 
-  glBufferData(GL_ARRAY_BUFFER, m_instances*sizeof(ngl::Mat4), NULL, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, m_instances*sizeof(ngl::Mat4), nullptr, GL_STATIC_DRAW);
   // bind a buffer object to an indexed buffer target in this case we are setting out matrix data
   // to the transform feedback
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_matrixID);
@@ -203,12 +200,12 @@ void NGLScene::createCube(GLfloat _scale )
   glBufferData(GL_ARRAY_BUFFER, sizeof(vertices)*sizeof(GLfloat), vertices, GL_STATIC_DRAW);
   // now we bind the vertex attribute pointer for this object in this case the
   // vertex data
-  glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,0);
+  glVertexAttribPointer(0,3,GL_FLOAT,GL_FALSE,0,nullptr);
   glEnableVertexAttribArray(0);
   // now we repeat for the UV data using the second VBO
   glBindBuffer(GL_ARRAY_BUFFER, vboID[1]);
   glBufferData(GL_ARRAY_BUFFER, sizeof(texture)*sizeof(GLfloat), texture, GL_STATIC_DRAW);
-  glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE,0,0);
+  glVertexAttribPointer(1,2,GL_FLOAT,GL_FALSE,0,nullptr);
   glEnableVertexAttribArray(1);
   // generate and bind our matrix buffer this is going to be fed to the feedback shader to
   // generate our model position data for later, if we update how many instances we use
@@ -216,7 +213,7 @@ void NGLScene::createCube(GLfloat _scale )
   glGenBuffers(1,&m_matrixID);
   glBindBuffer(GL_ARRAY_BUFFER, m_matrixID);
 
-  glBufferData(GL_ARRAY_BUFFER, m_instances*sizeof(ngl::Mat4), NULL, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, m_instances*sizeof(ngl::Mat4), nullptr, GL_STATIC_DRAW);
   // bind a buffer object to an indexed buffer target in this case we are setting out matrix data
   // to the transform feedback
   glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_matrixID);
@@ -228,12 +225,12 @@ void NGLScene::resizeGL(QResizeEvent *_event)
   m_win.width=_event->size().width()*devicePixelRatio();
   m_win.height=_event->size().height()*devicePixelRatio();
   // now set the camera size values as the screen size has changed
-  m_cam.setShape(45.0f,(float)width()/height(),0.05f,350.0f);
+  m_project=ngl::perspective(45.0f,(float)width()/height(),0.05f,350.0f);
 }
 
 void NGLScene::resizeGL(int _w , int _h)
 {
-  m_cam.setShape(45.0f,(float)_w/_h,0.05f,350.0f);
+  m_project=ngl::perspective(45.0f,(float)_w/_h,0.05f,350.0f);
   m_win.width=_w*devicePixelRatio();
   m_win.height=_h*devicePixelRatio();
 }
@@ -259,10 +256,10 @@ void NGLScene::initializeGL()
   ngl::Vec3 to(0,0,0);
   ngl::Vec3 up(0,1,0);
 
-  m_cam.set(from,to,up);
+  m_view=ngl::lookAt(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
-  m_cam.setShape(45,(float)720.0/576.0,0.5,150);
+  m_project=ngl::perspective(45,720.0f/576.0f,0.5f,150);
 
   // here we see what the max size of a uniform block can be, this is going
   // to be the GL_MAX_UNIFORM_BLOCK_SIZE / the size of the data we want to pass
@@ -338,8 +335,8 @@ void NGLScene::loadMatricesToShader()
   ngl::Mat3 normalMatrix;
   ngl::Mat4 M;
   M=m_mouseGlobalTX*m_transform.getMatrix();
-  MV=  m_cam.getViewMatrix()*M;
-  MVP= m_cam.getVPMatrix()*M;
+  MV=  m_view*M;
+  MVP= m_project*MV;
   normalMatrix=MV;
   normalMatrix.inverse().transpose();
   shader->setUniform("MV",MV);
@@ -369,7 +366,7 @@ void NGLScene::paintGL()
    if(m_updateBuffer==true)
    {
      glBindBuffer(GL_ARRAY_BUFFER, m_matrixID);
-     glBufferData(GL_ARRAY_BUFFER, m_instances*sizeof(ngl::Mat4), NULL, GL_STATIC_DRAW);
+     glBufferData(GL_ARRAY_BUFFER, m_instances*sizeof(ngl::Mat4), nullptr, GL_STATIC_DRAW);
      glBindBufferBase(GL_TRANSFORM_FEEDBACK_BUFFER, 0, m_matrixID);
      glBindTexture(GL_TEXTURE_BUFFER,m_tboID);
      glTexBuffer(GL_TEXTURE_BUFFER, GL_RGBA32F, m_matrixID);
@@ -385,7 +382,7 @@ void NGLScene::paintGL()
    // activate our vertex array for the points so we can fill in our matrix buffer
    glBindVertexArray(m_dataID);
    // set the view for the camera
-   shader->setUniform("View",m_cam.getViewMatrix());
+   shader->setUniform("View",m_view);
    // this sets some per-vertex data values for the Matrix shader
    shader->setUniform("data",0.3f,0.6f,0.5f,1.2f);
    // pass in the mouse rotation
@@ -413,7 +410,7 @@ void NGLScene::paintGL()
    // now we are going to switch to our texture shader and render our boxes
    (*shader)["TextureShader"]->use();
    // set the projection matrix for our camera
-   shader->setUniform("Projection",m_cam.getProjectionMatrix());
+   shader->setUniform("Projection",m_project);
    // activate our vertex array object for the box
    glBindVertexArray(m_vaoID);
 
