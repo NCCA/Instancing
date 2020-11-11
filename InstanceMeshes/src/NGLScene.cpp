@@ -29,15 +29,14 @@ void NGLScene::createTransformTBO()
   glGenBuffers(1,&tbo);
   // resize vector
   std::vector<ngl::Mat4> transforms(c_numTrees);
-  ngl::Random *rng=ngl::Random::instance();
   ngl::Vec3 tx;
   ngl::Mat4 pos;
   ngl::Mat4 scale;
   // set random position and scale for each matrix
   for(auto &t : transforms)
   {
-    tx=rng->getRandomVec3()*540;
-    auto yScale=rng->randomPositiveNumber(2.0f)+0.5f;
+    tx=ngl::Random::getRandomVec3()*540;
+    auto yScale=ngl::Random::randomPositiveNumber(2.0f)+0.5f;
     pos.translate(tx.m_x,0.0,tx.m_z);
     scale.scale(yScale,yScale,yScale);
     t=pos*scale;
@@ -72,7 +71,7 @@ void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
-  ngl::NGLInit::instance();
+  ngl::NGLInit::initialize();
 
   glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
   // enable depth testing for drawing
@@ -88,35 +87,32 @@ void NGLScene::initializeGL()
 
 
   // first we create a mesh from an obj passing in the obj file and texture
-  m_mesh.reset( new ngl::Obj("models/tree.obj"));
+  m_mesh=std::make_unique<ngl::Obj>("models/tree.obj");
   m_mesh->createVAO();
 
   m_view=ngl::lookAt(from,to,up);
   // set the shape using FOV 45 Aspect Ratio based on Width and Height
   // The final two are near and far clipping planes of 0.5 and 10
   m_project=ngl::perspective(45.0f,720.0f/576.0f,0.05f,1350.0f);
-  // now to load the shader and set the values
-  // grab an instance of shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   // we are creating a shader called PerFragADS
-  shader->createShaderProgram("PerFragADS");
+  ngl::ShaderLib::createShaderProgram("PerFragADS");
   // now we are going to create empty shaders for Frag and Vert
-  shader->attachShader("PerFragADSVertex",ngl::ShaderType::VERTEX);
-  shader->attachShader("PerFragADSFragment",ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::attachShader("PerFragADSVertex",ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("PerFragADSFragment",ngl::ShaderType::FRAGMENT);
   // attach the source
-  shader->loadShaderSource("PerFragADSVertex","shaders/PerFragASDVert.glsl");
-  shader->loadShaderSource("PerFragADSFragment","shaders/PerFragASDFrag.glsl");
+  ngl::ShaderLib::loadShaderSource("PerFragADSVertex","shaders/PerFragASDVert.glsl");
+  ngl::ShaderLib::loadShaderSource("PerFragADSFragment","shaders/PerFragASDFrag.glsl");
   // compile the shaders
-  shader->compileShader("PerFragADSVertex");
-  shader->compileShader("PerFragADSFragment");
+  ngl::ShaderLib::compileShader("PerFragADSVertex");
+  ngl::ShaderLib::compileShader("PerFragADSFragment");
   // add them to the program
-  shader->attachShaderToProgram("PerFragADS","PerFragADSVertex");
-  shader->attachShaderToProgram("PerFragADS","PerFragADSFragment");
+  ngl::ShaderLib::attachShaderToProgram("PerFragADS","PerFragADSVertex");
+  ngl::ShaderLib::attachShaderToProgram("PerFragADS","PerFragADSFragment");
 
   // now we have associated this data we can link the shader
-  shader->linkProgramObject("PerFragADS");
+  ngl::ShaderLib::linkProgramObject("PerFragADS");
   // and make it active ready to load values
-  (*shader)["PerFragADS"]->use();
+  ngl::ShaderLib::use("PerFragADS");
 
   glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
 
@@ -125,10 +121,10 @@ void NGLScene::initializeGL()
   ngl::Texture t("models/ratGrid.png");
   t.setMultiTexture(1);
   m_textureID=t.setTextureGL();
-  shader->setUniform("tex",1);
-  shader->setUniform("TBO",0);
+  ngl::ShaderLib::setUniform("tex",1);
+  ngl::ShaderLib::setUniform("TBO",0);
 
-  m_text.reset( new ngl::Text(QFont("Arial",16)));
+  m_text=std::make_unique<ngl::Text>("fonts/Arial.ttf",16);
   m_text->setScreenSize(width(),height());
 
 }
@@ -136,11 +132,10 @@ void NGLScene::initializeGL()
 
 void NGLScene::loadMatricesToShader()
 {
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  (*shader)["PerFragADS"]->use();
+  ngl::ShaderLib::use("PerFragADS");
   // loading this to shader each frame as it is the mouse that changes
-  shader->setUniform("mouseTX",m_mouseGlobalTX);
-  shader->setUniform("VP",m_project*m_view);
+  ngl::ShaderLib::setUniform("mouseTX",m_mouseGlobalTX);
+  ngl::ShaderLib::setUniform("VP",m_project*m_view);
 }
 
 void NGLScene::paintGL()
@@ -175,8 +170,7 @@ void NGLScene::paintGL()
   m_mesh->unbindVAO();
 
   m_text->setColour(1,1,0);
-  QString text=QString("%1 instances %2 fps").arg(c_numTrees).arg(m_fps);
-  m_text->renderText(10,20,text);
+  m_text->renderText(10,700,fmt::format("{} instances {} fps",c_numTrees,m_fps));
 
 }
 

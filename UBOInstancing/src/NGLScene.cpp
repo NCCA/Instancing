@@ -116,12 +116,11 @@ void NGLScene::createDataPoints()
   std::unique_ptr <ngl::Vec3 []> data (new ngl::Vec3[maxinstances]);
   // in this case create a sort of supertorus distribution of points
   // based on a random point
-  ngl::Random *rng=ngl::Random::instance();
   ngl::Vec3 p;
   for(unsigned int i=0; i<maxinstances; ++i)
   {
-    float angle = rng->randomNumber(M_PI);
-    float radius = rng->randomNumber(1.0);
+    float angle = ngl::Random::randomNumber(static_cast<float>(M_PI));
+    float radius = ngl::Random::randomNumber(1.0f);
     float ca = cosf(angle);
     float sa = sinf(angle);
     float cs = ca < 0 ? -1 : 1;
@@ -129,7 +128,7 @@ void NGLScene::createDataPoints()
     float x = radius * cs * pow(fabsf(ca), 1.2f);
     float y = radius * ss * pow(fabsf(sa), 1.2f);
 
-    p=rng->getRandomPoint(x*80,y,x+y*20);
+    p=ngl::Random::getRandomPoint(x*80,y,x+y*20);
     data[i].set(p.m_x,p.m_y,p.m_z);
   }
   // now store this buffer data for later.
@@ -240,7 +239,7 @@ void NGLScene::initializeGL()
 {
   // we must call this first before any other GL commands to load and link the
   // gl commands from the lib, if this is not done program will crash
-  ngl::NGLInit::instance();
+  ngl::NGLInit::initialize();
 
   glClearColor(0.4f, 0.4f, 0.4f, 1.0f);			   // Grey Background
   // enable depth testing for drawing
@@ -271,21 +270,18 @@ void NGLScene::initializeGL()
   m_instancesPerBlock = maxUniformBlockSize / sizeof(ngl::Mat4);
   std::cout<<"Number of instances per block is "<<m_instancesPerBlock<<"\n";
 
-  // now to load the shader and set the values
-  // grab an instance of shader manager
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
   // This is for our transform shader and it will load a series of matrics into a uniform
   // block ready for drawing later
-  shader->createShaderProgram("TransformFeedback");
-  shader->attachShader("TransVertex",ngl::ShaderType::VERTEX);
-  shader->loadShaderSource("TransVertex","shaders/feedback.glsl");
-  shader->compileShader("TransVertex");
-  shader->attachShaderToProgram("TransformFeedback","TransVertex");
+  ngl::ShaderLib::createShaderProgram("TransformFeedback");
+  ngl::ShaderLib::attachShader("TransVertex",ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::loadShaderSource("TransVertex","shaders/feedback.glsl");
+  ngl::ShaderLib::compileShader("TransVertex");
+  ngl::ShaderLib::attachShaderToProgram("TransformFeedback","TransVertex");
   // bind our attribute
-  shader->bindAttribute("TransformFeedback",0,"inPos");
+  ngl::ShaderLib::bindAttribute("TransformFeedback",0,"inPos");
   // now we want to get the TransformFeedback variables and set them
   // first get the shader ID
-  GLuint id=shader->getProgramID("TransformFeedback");
+  GLuint id=ngl::ShaderLib::getProgramID("TransformFeedback");
   // create a list of the varyings we want to attach to (this is the out in our shader)
   const char *varyings[1] = { "ModelView" };
   // The names of the vertex or geometry shader outputs to be recorded in
@@ -293,34 +289,34 @@ void NGLScene::initializeGL()
   // in this case we are storing 1 (ModelView) and the attribs are
   glTransformFeedbackVaryings(id, 1, varyings, GL_INTERLEAVED_ATTRIBS);
   // now link the shader
-  shader->linkProgramObject("TransformFeedback");
-  shader->use("TransformFeedback");
+  ngl::ShaderLib::linkProgramObject("TransformFeedback");
+  ngl::ShaderLib::use("TransformFeedback");
   // register the uniforms
-  shader->autoRegisterUniforms("TransformFeedback");
+  ngl::ShaderLib::autoRegisterUniforms("TransformFeedback");
   // now we are going to create our texture shader for drawing the cube
-  shader->createShaderProgram("TextureShader");
+  ngl::ShaderLib::createShaderProgram("TextureShader");
 
-  shader->attachShader("TextureVertex",ngl::ShaderType::VERTEX);
-  shader->attachShader("TextureFragment",ngl::ShaderType::FRAGMENT);
-  shader->loadShaderSource("TextureVertex","shaders/Vertex.glsl");
-  shader->loadShaderSource("TextureFragment","shaders/Fragment.glsl");
+  ngl::ShaderLib::attachShader("TextureVertex",ngl::ShaderType::VERTEX);
+  ngl::ShaderLib::attachShader("TextureFragment",ngl::ShaderType::FRAGMENT);
+  ngl::ShaderLib::loadShaderSource("TextureVertex","shaders/Vertex.glsl");
+  ngl::ShaderLib::loadShaderSource("TextureFragment","shaders/Fragment.glsl");
 
-  shader->compileShader("TextureVertex");
-  shader->compileShader("TextureFragment");
-  shader->attachShaderToProgram("TextureShader","TextureVertex");
-  shader->attachShaderToProgram("TextureShader","TextureFragment");
+  ngl::ShaderLib::compileShader("TextureVertex");
+  ngl::ShaderLib::compileShader("TextureFragment");
+  ngl::ShaderLib::attachShaderToProgram("TextureShader","TextureVertex");
+  ngl::ShaderLib::attachShaderToProgram("TextureShader","TextureFragment");
 
   // link
-  shader->linkProgramObject("TextureShader");
-  shader->use("TextureShader");
+  ngl::ShaderLib::linkProgramObject("TextureShader");
+  ngl::ShaderLib::use("TextureShader");
   // register the uniforms for later uses
-  shader->autoRegisterUniforms("TextureShader");
+  ngl::ShaderLib::autoRegisterUniforms("TextureShader");
   // create our cube
 
-  createCube(0.2);
+  createCube(0.2f);
   loadTexture();
   glEnable(GL_DEPTH_TEST); // for removal of hidden surfaces
-  m_text.reset(  new ngl::Text(QFont("Arial",14)));
+  m_text=std::make_unique<ngl::Text>("fonts/Arial.ttf",14);
   m_text->setScreenSize(width(),height());
   // create the data points
   createDataPoints();
@@ -329,7 +325,6 @@ void NGLScene::initializeGL()
 
 void NGLScene::loadMatricesToShader()
 {
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
 
   ngl::Mat4 MV;
   ngl::Mat4 MVP;
@@ -340,10 +335,10 @@ void NGLScene::loadMatricesToShader()
   MVP= m_project*MV;
   normalMatrix=MV;
   normalMatrix.inverse().transpose();
-  shader->setUniform("MV",MV);
-  shader->setUniform("MVP",MVP);
-  shader->setUniform("normalMatrix",normalMatrix);
-  shader->setUniform("M",M);
+  ngl::ShaderLib::setUniform("MV",MV);
+  ngl::ShaderLib::setUniform("MVP",MVP);
+  ngl::ShaderLib::setUniform("normalMatrix",normalMatrix);
+  ngl::ShaderLib::setUniform("M",M);
 }
 
 void NGLScene::paintGL()
@@ -364,8 +359,7 @@ void NGLScene::paintGL()
   m_mouseGlobalTX.m_m[3][0] = m_modelPos.m_x;
   m_mouseGlobalTX.m_m[3][1] = m_modelPos.m_y;
   m_mouseGlobalTX.m_m[3][2] = m_modelPos.m_z;
-  ngl::ShaderLib *shader=ngl::ShaderLib::instance();
-  (*shader)["TransformFeedback"]->use();
+  ngl::ShaderLib::use("TransformFeedback");
   // if the number of instances have changed re-bind the buffer to the correct size
   if(m_updateBuffer==true)
   {
@@ -378,11 +372,11 @@ void NGLScene::paintGL()
   // activate our vertex array for the points so we can fill in our matrix buffer
   glBindVertexArray(m_dataID);
   // set the view for the camera
-  shader->setUniform("View",m_view);
+  ngl::ShaderLib::setUniform("View",m_view);
   // this sets some per-vertex data values for the Matrix shader
-  shader->setUniform("data",0.3f,0.6f,0.5f,1.2f);
+  ngl::ShaderLib::setUniform("data",0.3f,0.6f,0.5f,1.2f);
   // pass in the mouse rotation
-  shader->setUniform("mouseRotation",m_mouseGlobalTX);
+  ngl::ShaderLib::setUniform("mouseRotation",m_mouseGlobalTX);
   // this flag tells OpenGL to discard the data once it has passed the transform stage, this means
   // that none of it wil be drawn (RASTERIZED) remember to turn this back on once we have done this
   glEnable(GL_RASTERIZER_DISCARD);
@@ -396,9 +390,9 @@ void NGLScene::paintGL()
   // and re-enable rasterisation
   glDisable(GL_RASTERIZER_DISCARD);
   // now we are going to switch to our texture shader and render our boxes
-  (*shader)["TextureShader"]->use();
+  ngl::ShaderLib::use("TextureShader");
   // set the projection matrix for our camera
-  shader->setUniform("Projection",m_project);
+  ngl::ShaderLib::setUniform("Projection",m_project);
   // activate the texture
   glBindTexture(GL_TEXTURE_2D,m_textureName);
   // activate our vertex array object for the box
@@ -427,10 +421,8 @@ void NGLScene::paintGL()
         ++m_frames;
   glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
   m_text->setColour(1,1,0);
-  QString text=QString("Texture and Vertex Array Object %1 instances Demo %2 fps").arg(m_instances).arg(m_fps);
-  m_text->renderText(10,20,text);
-  text=QString("Num vertices = %1 num triangles = %2").arg(m_instances*36).arg(m_instances*12);
-  m_text->renderText(10,40,text);
+  m_text->renderText(10,700,fmt::format("Texture and Vertex Array Object {} instances Demo {} fps",m_instances,m_fps));
+  m_text->renderText(10,680,fmt::format("Num vertices = {} num triangles = {}",m_instances*36,m_instances*12));
 
 }
 
