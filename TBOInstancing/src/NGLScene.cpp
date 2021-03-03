@@ -418,7 +418,6 @@ void NGLScene::paintGL()
    ++m_frames;
    glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
    m_text->setColour(1,1,0);
-   QString text=QString("Texture and Vertex Array Object %1 instances Demo %2 fps").arg(m_instances).arg(m_fps);
    m_text->renderText(10,700,fmt::format("Texture and Vertex Array Object {} instances Demo {} fps",m_instances,m_fps));
    m_text->renderText(10,680,fmt::format("Num vertices = {} num triangles = {}",m_instances*36,m_instances*12));
 }
