@@ -219,13 +219,6 @@ void NGLScene::createCube(GLfloat _scale )
 
 }
 
-void NGLScene::resizeGL(QResizeEvent *_event)
-{
-  m_win.width=_event->size().width()*devicePixelRatio();
-  m_win.height=_event->size().height()*devicePixelRatio();
-  // now set the camera size values as the screen size has changed
-  m_project=ngl::perspective(45.0f,(float)width()/height(),0.05f,350.0f);
-}
 
 void NGLScene::resizeGL(int _w , int _h)
 {
@@ -496,11 +489,11 @@ void NGLScene::wheelEvent(QWheelEvent *_event)
 {
 
   // check the diff of the wheel position (0 means no change)
-  if(_event->delta() > 0)
+  if(_event->angleDelta().x() > 0)
   {
     m_modelPos.m_z+=ZOOM;
   }
-  else if(_event->delta() <0 )
+  else if(_event->angleDelta().x() <0 )
   {
     m_modelPos.m_z-=ZOOM;
   }

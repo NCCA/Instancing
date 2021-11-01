@@ -3,7 +3,7 @@
 #include <ngl/Transformation.h>
 #include <ngl/Text.h>
 #include <QOpenGLWindow>
-#include <QTime>
+#include <QElapsedTimer>
 #include <memory>
 #include "WindowParams.h"
 //----------------------------------------------------------------------------------------------------------------------
@@ -35,18 +35,15 @@ class NGLScene : public QOpenGLWindow
     /// @brief the initialize class is called once when the window is created and we have a valid GL context
     /// use this to setup any default GL stuff
     //----------------------------------------------------------------------------------------------------------------------
-    void initializeGL();
+    void initializeGL() override;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief this is called everytime we want to draw the scene
     //----------------------------------------------------------------------------------------------------------------------
-    void paintGL();
+    void paintGL() override;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief this is called everytime we resize
     //----------------------------------------------------------------------------------------------------------------------
-    // Qt 5.5.1 must have this implemented and uses it
-    void resizeGL(QResizeEvent *_event);
-    // Qt 5.x uses this instead! http://doc.qt.io/qt-5/qopenglwindow.html#resizeGL
-    void resizeGL(int _w, int _h);
+    void resizeGL(int _w, int _h) override;
 
 private:
     //----------------------------------------------------------------------------------------------------------------------
@@ -110,7 +107,7 @@ private:
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief timer for re-draw
     //----------------------------------------------------------------------------------------------------------------------
-    QTime m_timer;
+    QElapsedTimer m_timer;
     //----------------------------------------------------------------------------------------------------------------------
     /// @brief number of instances per block of the UBO in shader
     //----------------------------------------------------------------------------------------------------------------------
