@@ -7,7 +7,7 @@
 #include <ngl/VAOPrimitives.h>
 #include <ngl/ShaderLib.h>
 #include <ngl/Random.h>
-
+#include <iostream>
 constexpr size_t c_numTrees = 5000;
 
 NGLScene::NGLScene()
