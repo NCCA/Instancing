@@ -7,6 +7,7 @@
 #include <ngl/ShaderLib.h>
 #include <ngl/Random.h>
 #include <memory>
+#include <iostream>
 
 //----------------------------------------------------------------------------------------------------------------------
 /// num instances
